@@ -5,9 +5,13 @@
  * electronically from any other source (including 3rd party web sites) or
  * distributed to other students.
  *
- *  Name: Brian Smith Student ID: 137105177 Date: 29/09/2018
- */
+ * Name: Brian Smith Student ID: 137105177 Date: 29/09/2018
+ *
+ * Online (Heroku) Link: https://ancient-beyond-34247.herokuapp.com/
+ *
+ ********************************************************************************/
 
+//@ts-check
 "use strict";
 
 const express = require("express");

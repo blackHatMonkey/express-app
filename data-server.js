@@ -1,65 +1,67 @@
-"use strict";
+//@ts-check
+'use strict';
 
-const fs = require("fs");
+const fs = require('fs');
 
 var employees = [];
 var departments = [];
-
-const readEmployee = function () {
-    return new Promise((resolve, reject) => {
-        fs.readFile("./data/employees.json", (err, data) => {
-            if (err) {
-                throw err;
-            }
-            employees = JSON.parse(data);
-            if (employees.length > 0) {
-                resolve("All employees are added!");
-            } else {
-                reject("Failed to add all employees!");
-            }
-        });
-    });
-};
-
-const readDepartments = function () {
-    return new Promise((resolve, reject) => {
-        fs.readFile("./data/departments.json", (err, data) => {
-            if (err) {
-                throw err;
-            }
-            departments = JSON.parse(data);
-            if (departments.length > 0) {
-                resolve("All departments are added!");
-            } else {
-                reject("Failed to add all departments!");
-            }
-        });
-    });
-};
-
+/**
+ * Read the departments and employees file.
+ * 
+ * @returns {Promise} Promise object represents read employee and department
+ * files.
+ */
 module.exports.initialize = function () {
     return new Promise((resolve, reject) => {
-        readEmployee()
-            .then(readDepartments)
-            .then(() => {
-                resolve("Employees and departments added!");
-            })
-            .catch((message) => {
-                reject("Unable to add emplyees and departments!");
-            });
+        fs.readFile('./data/employees.json', (empErr, empData) => {
+            if (empErr) {
+                reject(empErr);
+            }
+            employees = JSON.parse(empData);
+            if (employees.length > 0) {
+                fs.readFile(
+                    './data/departments.json',
+                    (depErr, depData) => {
+                        if (depErr) {
+                            reject(depErr);
+                        }
+
+                        departments = JSON.parse(depData);
+                        if (departments.length > 0) {
+                            resolve(
+                                'All departments and employees are added!');
+                        } else {
+                            reject(
+                                'Unable to add departments!');
+                        }
+                    });
+            } else {
+                reject('Unable to add employees!');
+            }
+        });
     });
 };
 
+/**
+ * Return all employees.
+ * 
+ * @returns {Promise} Promise object representing array of all employees
+ */
 module.exports.getAllEmployees = function () {
     return new Promise((resolve, reject) => {
         if (employees.length === 0) {
-            reject("Employees is empty!");
+            reject('Employees is empty!');
         } else {
             resolve(employees);
         }
     });
 };
 
+/**
+ * Return all the managers.
+ * 
+ * @returns {Promise} Promise object representing array of all managers.
+ */
 module.exports.getManagers = function () {
     return new Promise((resolve, reject) => {
         let managers = [];
@@ -73,15 +75,20 @@ module.exports.getManagers = function () {
         if (managers.length > 0) {
             resolve(managers);
         } else {
-            reject("No managers were found!");
+            reject('No managers were found!');
         }
     });
 };
 
+/**
+ * Return all the departments.
+ * 
+ * @returns {Promise} Promise object representing array of all departments.
+ */
 module.exports.getDepartments = function () {
     return new Promise((resolve, reject) => {
         if (departments.length === 0) {
-            reject("Departments is empty!");
+            reject('Departments is empty!');
         } else {
             resolve(departments);
         }
