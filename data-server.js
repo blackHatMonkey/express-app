@@ -94,3 +94,23 @@ module.exports.getDepartments = function () {
         }
     });
 };
+
+/**
+ * 
+ * @param {*} employeeData 
+ * @returns {Promise} Promise object representing sucess of adding a new employee.
+ */
+module.exports.addEmployee = function (employeeData) {
+    console.log(employeeData);
+    return new Promise((resolve, reject) => {
+        if (typeof employeeData.isManager === "undefined") {
+            employeeData.isManager = false;
+        } else {
+            employeeData.isManager = true;
+        }
+
+        employeeData.employeeNum = employees.length + 1;
+        employees.push(employeeData);
+        resolve();
+    });
+};

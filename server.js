@@ -12,11 +12,14 @@
  ********************************************************************************/
 
 //@ts-check
-"use strict";
+'use strict';
 
-const express = require("express");
-const data_module = require("./data-server.js");
-const path = require("path");
+const express = require('express');
+const data_module = require('./data-server.js');
+const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
+const bodyParser = require('body-parser');
 
 const app = express();
 const HTTP_PORT = process.env.PORT || 8080;
@@ -24,20 +27,30 @@ const HTTP_PORT = process.env.PORT || 8080;
 // call this function after the http server starts listening for requests
 function onHttpStart() {
     console.log(
-        "Server started listening on http://localhost:" + HTTP_PORT);
+        'Server started listening on http://localhost:' + HTTP_PORT);
 }
 
-app.use(express.static("public"));
-
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "/views/home.html"));
+app.use(express.static('public'));
+const storage = multer.diskStorage({
+    destination: './public/images/uploaded',
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
 });
 
-app.get("/about", (req, res) => {
-    res.sendFile(path.join(__dirname, "/views/about.html"));
+const upload = multer({
+    storage: storage
 });
 
-app.get("/departments", (req, res) => {
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '/views/home.html'));
+});
+
+app.get('/about', (req, res) => {
+    res.sendFile(path.join(__dirname, '/views/about.html'));
+});
+
+app.get('/departments', (req, res) => {
     data_module.getDepartments()
         .then((data) => {
             res.json(data);
@@ -49,7 +62,7 @@ app.get("/departments", (req, res) => {
         });
 });
 
-app.get("/managers", (req, res) => {
+app.get('/managers', (req, res) => {
     data_module.getManagers()
         .then((data) => {
             res.json(data);
@@ -61,7 +74,7 @@ app.get("/managers", (req, res) => {
         });
 });
 
-app.get("/employees", (req, res) => {
+app.get('/employees', (req, res) => {
     data_module.getAllEmployees()
         .then((data) => {
             res.json(data);
@@ -73,8 +86,41 @@ app.get("/employees", (req, res) => {
         });
 });
 
+app.get('/employees/add', (req, res) => {
+    res.sendFile(path.join(__dirname, '/views/addEmployee.html'));
+});
+
+app.get('/images/add', (req, res) => {
+    res.sendFile(path.join(__dirname, '/views/addImage.html'));
+});
+
+app.get('/images', (req, res) => {
+    fs.readdir('./public/images/uploaded', function (err, items) {
+        res.json(items);
+    });
+});
+
+app.post('/images/add', upload.single('imageFile'), (req, res) => {
+    res.redirect('/images');
+});
+
+app.post('/employees/add', (req, res) => {
+    console.log(req.body);
+    data_module.addEmployee(req.body)
+        .then(() => {
+            res.redirect('/employees');
+        })
+        .catch((err) => {
+            console.log(err);
+        });
+});
+
+app.use(bodyParser.urlencoded({
+    extended: true
+}));
+
 app.use((req, res) => {
-    res.status(404).send("Page Not Found");
+    res.status(404).send('Page Not Found');
 });
 
 data_module.initialize()
