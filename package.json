@@ -10,11 +10,11 @@
     "author": "Brian Smith",
     "license": "MIT",
     "dependencies": {
-        "@types/express": "^4.16.0",
+        "@types/express-handlebars": "0.0.30",
         "body-parser": "^1.18.3",
         "express": "^4.16.3",
-        "multer": "^1.4.0",
-        "semver": "^5.6.0"
+        "express-handlebars": "^3.0.0",
+        "multer": "^1.4.0"
     },
     "jshintConfig": {
         "esversion": 6,
@@ -26,8 +26,12 @@
     },
     "jslintConfig": {},
     "devDependencies": {
-        "nodemon": "^1.18.4",
+        "@types/body-parser": "^1.17.0",
+        "@types/express": "^4.16.0",
+        "@types/multer": "^1.3.7",
+        "eslint": "^5.6.1",
         "jshint": "^2.9.6",
-        "eslint": "^5.6.1"
+        "nodemon": "^1.18.4",
+        "semver": "^5.6.0"
     }
 }
