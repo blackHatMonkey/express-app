@@ -39,32 +39,56 @@ const storage = multer.diskStorage({
         }
 });
 
+app.engine(
+    '.hbs', exphbs({
+            extname: '.hbs',
+            helpers: {
+                    navLink: function(url, options) {
+                            return '<li' +
+                                ((url == app.locals.activeRoute) ?
+                                     ' class="active" ' :
+                                     '') +
+                                '><a href="' + url + '">' + options.fn(this) +
+                                '</a></li>';
+                    },
+                    equal: function(lvalue, rvalue, options) {
+                            if (arguments.length < 3)
+                                    throw new Error(
+                                        'Handlebars Helper equal needs 2 parameters');
+                            if (lvalue != rvalue) {
+                                    return options.inverse(this);
+                            } else {
+                                    return options.fn(this);
+                            }
+                    }
+            },
+            defaultLayout: 'main'
+    }));
+app.set('view engine', '.hbs');
+
 const upload = multer({storage: storage});
 
 app.use(bodyParser.urlencoded({extended: true}));
 
+app.use(function(req, res, next) {
+        let route = req.baseUrl + req.path;
+        app.locals.activeRoute =
+            (route == '/') ? '/' : route.replace(/\/$/, '');
+        next();
+});
+
 app.get('/', (req, res) => {
-        res.sendFile(path.join(__dirname, '/views/home.html'));
+        res.render('home');
 });
 
 app.get('/about', (req, res) => {
-        res.sendFile(path.join(__dirname, '/views/about.html'));
+        res.render('about');
 });
 
 app.get('/departments', (req, res) => {
         data_module.getDepartments()
             .then(data => {
-                    res.json(data);
-            })
-            .catch(message => {
-                    res.json({message: message});
-            });
-});
-
-app.get('/managers', (req, res) => {
-        data_module.getManagers()
-            .then(data => {
-                    res.json(data);
+                    res.render('departments', {data: data});
             })
             .catch(message => {
                     res.json({message: message});
@@ -75,60 +99,73 @@ app.get('/employees', (req, res) => {
         if (typeof req.query.status !== 'undefined') {
                 data_module.getEmployeesByStatus(req.query.status)
                     .then(data => {
-                            res.json(data);
+                            res.render('employees', {data: data});
                     })
                     .catch(message => {
-                            res.json({message: message});
+                            res.render('employees', {message: message});
                     });
         } else if (typeof req.query.department !== 'undefined') {
                 data_module.getEmployeesByDepartment(req.query.department)
                     .then(data => {
-                            res.json(data);
+                            res.render('employees', {data: data});
                     })
                     .catch(message => {
-                            res.json({message: message});
+                            res.render('employees', {message: message});
                     });
         } else if (typeof req.query.manager !== 'undefined') {
                 data_module.getEmployeesByManager(req.query.manager)
                     .then(data => {
-                            res.json(data);
+                            res.render('employees', {data: data});
                     })
                     .catch(message => {
-                            res.json({message: message});
+                            res.render('employees', {message: message});
                     });
         } else {
                 data_module.getAllEmployees()
                     .then(data => {
-                            res.json(data);
+                            res.render('employees', {data: data});
                     })
                     .catch(message => {
-                            res.json({message: message});
+                            res.render('employees', {message: message});
                     });
         }
 });
 
-app.get('/employee/:value', (req, res) => {
-        data_module.getEmployeeByNum(req.params.value)
+
+app.get('/employee/:empNum', (req, res) => {
+        data_module.getEmployeeByNum(req.params.empNum)
             .then(data => {
-                    res.json(data);
+                    res.render('employee', {employee: data});
             })
             .catch(message => {
-                    res.json({message: message});
+                    res.render('employee', {message: 'no results'});
             });
 });
 
 app.get('/employees/add', (req, res) => {
-        res.sendFile(path.join(__dirname, '/views/addEmployee.html'));
+        res.render('addEmployee');
 });
 
 app.get('/images/add', (req, res) => {
-        res.sendFile(path.join(__dirname, '/views/addImage.html'));
+        res.render('addImage');
 });
 
 app.get('/images', (req, res) => {
         fs.readdir('./public/images/uploaded', function(err, items) {
-                res.json(items);
+                res.render('images', {data: items});
         });
+});
+
+app.post('/employee/update', (req, res) => {
+        console.log(req.body);
+        data_module.updateEmployee(req.body)
+            .then(() => {
+                    res.redirect('/employees');
+            })
+            .catch(() => {
+                    console.log('failed to update employee!');
+                    res.redirect('/employees');
+            });
 });
 
 app.post('/images/add', upload.single('imageFile'), (req, res) => {

@@ -215,3 +215,23 @@ module.exports.getEmployeeByNum = function(num) {
                 }
         });
 };
+
+/**
+ * Update the employee.
+ *
+ * @param {Object} employeeData An employee object.
+ * @returns {Promise} Promise object representing sucess of updating
+ * an employee.
+ */
+module.exports.updateEmployee = function(employeeData) {
+        return new Promise((resolve, reject) => {
+                for (let i = 0; i < employees.length; i++) {
+                        if (employees[i].employeeNum ==
+                            employeeData.employeeNum) {
+                                employees[i] = employeeData;
+                                resolve();
+                        }
+                }
+                reject();
+        });
+};
