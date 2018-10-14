@@ -26,107 +26,132 @@ const HTTP_PORT = process.env.PORT || 8080;
 
 // call this function after the http server starts listening for requests
 function onHttpStart() {
-    console.log(
-        'Server started listening on http://localhost:' + HTTP_PORT);
+        console.log(
+            'Server started listening on http://localhost:' + HTTP_PORT);
 }
 
 app.use(express.static('public'));
 const storage = multer.diskStorage({
-    destination: './public/images/uploaded',
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
+        destination: './public/images/uploaded',
+        filename: function(req, file, cb) {
+                cb(null, Date.now() + path.extname(file.originalname));
+        }
 });
 
-const upload = multer({
-    storage: storage
-});
+const upload = multer({storage: storage});
+
+app.use(bodyParser.urlencoded({extended: true}));
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '/views/home.html'));
+        res.sendFile(path.join(__dirname, '/views/home.html'));
 });
 
 app.get('/about', (req, res) => {
-    res.sendFile(path.join(__dirname, '/views/about.html'));
+        res.sendFile(path.join(__dirname, '/views/about.html'));
 });
 
 app.get('/departments', (req, res) => {
-    data_module.getDepartments()
-        .then((data) => {
-            res.json(data);
-        })
-        .catch((message) => {
-            res.json({
-                message: message
+        data_module.getDepartments()
+            .then(data => {
+                    res.json(data);
+            })
+            .catch(message => {
+                    res.json({message: message});
             });
-        });
 });
 
 app.get('/managers', (req, res) => {
-    data_module.getManagers()
-        .then((data) => {
-            res.json(data);
-        })
-        .catch((message) => {
-            res.json({
-                message: message
+        data_module.getManagers()
+            .then(data => {
+                    res.json(data);
+            })
+            .catch(message => {
+                    res.json({message: message});
             });
-        });
 });
 
 app.get('/employees', (req, res) => {
-    data_module.getAllEmployees()
-        .then((data) => {
-            res.json(data);
-        })
-        .catch((message) => {
-            res.json({
-                message: message
+        if (typeof req.query.status !== 'undefined') {
+                data_module.getEmployeesByStatus(req.query.status)
+                    .then(data => {
+                            res.json(data);
+                    })
+                    .catch(message => {
+                            res.json({message: message});
+                    });
+        } else if (typeof req.query.department !== 'undefined') {
+                data_module.getEmployeesByDepartment(req.query.department)
+                    .then(data => {
+                            res.json(data);
+                    })
+                    .catch(message => {
+                            res.json({message: message});
+                    });
+        } else if (typeof req.query.manager !== 'undefined') {
+                data_module.getEmployeesByManager(req.query.manager)
+                    .then(data => {
+                            res.json(data);
+                    })
+                    .catch(message => {
+                            res.json({message: message});
+                    });
+        } else {
+                data_module.getAllEmployees()
+                    .then(data => {
+                            res.json(data);
+                    })
+                    .catch(message => {
+                            res.json({message: message});
+                    });
+        }
+});
+
+app.get('/employee/:value', (req, res) => {
+        data_module.getEmployeeByNum(req.params.value)
+            .then(data => {
+                    res.json(data);
+            })
+            .catch(message => {
+                    res.json({message: message});
             });
-        });
 });
 
 app.get('/employees/add', (req, res) => {
-    res.sendFile(path.join(__dirname, '/views/addEmployee.html'));
+        res.sendFile(path.join(__dirname, '/views/addEmployee.html'));
 });
 
 app.get('/images/add', (req, res) => {
-    res.sendFile(path.join(__dirname, '/views/addImage.html'));
+        res.sendFile(path.join(__dirname, '/views/addImage.html'));
 });
 
 app.get('/images', (req, res) => {
-    fs.readdir('./public/images/uploaded', function (err, items) {
-        res.json(items);
-    });
-});
-
-app.post('/images/add', upload.single('imageFile'), (req, res) => {
-    res.redirect('/images');
-});
-
-app.post('/employees/add', (req, res) => {
-    console.log(req.body);
-    data_module.addEmployee(req.body)
-        .then(() => {
-            res.redirect('/employees');
-        })
-        .catch((err) => {
-            console.log(err);
+        fs.readdir('./public/images/uploaded', function(err, items) {
+                res.json(items);
         });
 });
 
-app.use(bodyParser.urlencoded({
-    extended: true
-}));
+app.post('/images/add', upload.single('imageFile'), (req, res) => {
+        res.redirect('/images');
+});
+
+app.post('/employees/add', (req, res) => {
+        data_module.addEmployee(req.body)
+            .then(() => {
+                    res.redirect('/employees');
+            })
+            .catch(err => {
+                    console.log(err);
+            });
+});
 
 app.use((req, res) => {
-    res.status(404).send('Page Not Found');
+        res.status(404).send('Page Not Found');
 });
 
 data_module.initialize()
     .then(() => {
-        app.listen(HTTP_PORT, onHttpStart);
+            app.listen(HTTP_PORT, onHttpStart);
     })
-    .catch((message) => {
-        console.log(message);
+    .catch(message => {
+            console.log(message);
     });
