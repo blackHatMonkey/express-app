@@ -1,45 +1,65 @@
 //@ts-check
 'use strict';
 
-const fs = require('fs');
+const Sequelize = require('sequelize');
+const Op = Sequelize.Op;
 
-var employees = [];
-var departments = [];
+let sequelize = new Sequelize('d675hkmua4jd8p',
+        'hetcwjirktqgfy',
+        'd4a5f2c958b8dcd16abf81b2ac628eac0e3e47d34163e3b44d1280dcc9f6b62d', {
+                host: 'ec2-107-21-93-132.compute-1.amazonaws.com',
+                dialect: 'postgres',
+                port: 5432,
+                operatorsAliases: false,
+                dialectOptions: {
+                        ssl: true
+                }
+        });
+
+let Employee = sequelize.define('Employee', {
+        employeeNum: {
+                type: Sequelize.INTEGER,
+                primaryKey: true,
+                autoIncrement: true
+        },
+        firstName: Sequelize.STRING,
+        lastName: Sequelize.STRING,
+        email: Sequelize.STRING,
+        SSN: Sequelize.STRING,
+        addressStreet: Sequelize.STRING,
+        addressCity: Sequelize.STRING,
+        addressState: Sequelize.STRING,
+        addressPostal: Sequelize.STRING,
+        maritalStatus: Sequelize.STRING,
+        isManager: Sequelize.BOOLEAN,
+        employeeManagerNum: Sequelize.INTEGER,
+        status: Sequelize.STRING,
+        department: Sequelize.INTEGER,
+        hireDate: Sequelize.STRING
+});
+
+let Department = sequelize.define('Department', {
+        departmentId: {
+                type: Sequelize.INTEGER,
+                primaryKey: true,
+                autoIncrement: true
+        },
+        departmentName: Sequelize.STRING
+});
+
 /**
  * Read the departments and employees file.
  *
  * @returns {Promise} Promise object represents read employee and department
  * files.
  */
-module.exports.initialize = function() {
+module.exports.initialize = function () {
         return new Promise((resolve, reject) => {
-                fs.readFile('./data/employees.json', (empErr, empData) => {
-                        if (empErr) {
-                                reject(empErr);
-                        }
-                        employees = JSON.parse(empData.toString('utf-8'));
-                        if (employees.length > 0) {
-                                fs.readFile(
-                                    './data/departments.json',
-                                    (depErr, depData) => {
-                                            if (depErr) {
-                                                    reject(depErr);
-                                            }
-
-                                            departments = JSON.parse(
-                                                depData.toString('utf-8'));
-                                            if (departments.length > 0) {
-                                                    resolve(
-                                                        'All departments and employees are added!');
-                                            } else {
-                                                    reject(
-                                                        'Unable to add departments!');
-                                            }
-                                    });
-                        } else {
-                                reject('Unable to add employees!');
-                        }
-                });
+                sequelize.sync()
+                        .then(() => { resolve(); })
+                        .catch((err) => {
+                                reject(err);
+                        });
         });
 };
 
@@ -48,13 +68,11 @@ module.exports.initialize = function() {
  *
  * @returns {Promise} Promise object representing array of all employees
  */
-module.exports.getAllEmployees = function() {
+module.exports.getAllEmployees = function () {
         return new Promise((resolve, reject) => {
-                if (employees.length === 0) {
-                        reject('Employees is empty!');
-                } else {
-                        resolve(employees);
-                }
+                Employee.findAll().then((data) => {
+                        resolve(data);
+                }).catch((err) => { reject(err); });
         });
 };
 
@@ -63,21 +81,17 @@ module.exports.getAllEmployees = function() {
  *
  * @returns {Promise} Promise object representing array of all managers.
  */
-module.exports.getManagers = function() {
+module.exports.getManagers = function () {
         return new Promise((resolve, reject) => {
-                let managers = [];
-
-                employees.forEach(employee => {
-                        if (employee.isManager) {
-                                managers.push(employee);
+                Employee.findAll({
+                        where: {
+                                isManager: {
+                                        [Op.eq]: true
+                                }
                         }
-                });
-
-                if (managers.length > 0) {
-                        resolve(managers);
-                } else {
-                        reject('No managers were found!');
-                }
+                })
+                        .then((data) => { resolve(data); })
+                        .catch((err) => { console.log(err); });
         });
 };
 
@@ -86,13 +100,11 @@ module.exports.getManagers = function() {
  *
  * @returns {Promise} Promise object representing array of all departments.
  */
-module.exports.getDepartments = function() {
+module.exports.getDepartments = function () {
         return new Promise((resolve, reject) => {
-                if (departments.length === 0) {
-                        reject('Departments is empty!');
-                } else {
-                        resolve(departments);
-                }
+                Department.findAll()
+                        .then((data) => { resolve(data); })
+                        .catch((err) => { reject(err); });
         });
 };
 
@@ -102,23 +114,23 @@ module.exports.getDepartments = function() {
  * @returns {Promise} Promise object representing sucess of adding a new
  * employee.
  */
-module.exports.addEmployee = function(employeeData) {
+module.exports.addEmployee = function (employeeData) {
         return new Promise((resolve, reject) => {
-                if (typeof employeeData.isManager === 'undefined') {
-                        employeeData.isManager = false;
-                } else {
-                        employeeData.isManager = true;
+                // we need to make sure it is a boolean value (radio button)
+                employeeData.isManager = (employeeData.isManager) ? true : false;
+
+                // we can not have any empty strings
+                for (let property in employeeData) {
+                        if (employeeData[property] === '') {
+                                employeeData[property] = null;
+                        }
                 }
 
-                let size = employees.length;
-                employeeData.employeeNum = size + 1;
-                employees.push(employeeData);
+                Employee.create(employeeData)
+                        .then(() => { resolve(); })
+                        .catch((err) => { reject(err); });
 
-                if (size < employees.length) {
-                        resolve();
-                } else {
-                        reject();
-                }
+
         });
 };
 
@@ -129,19 +141,17 @@ module.exports.addEmployee = function(employeeData) {
  * @returns {Promise} Promise object representing sucess of returning all
  * employees with status.
  */
-module.exports.getEmployeesByStatus = function(status) {
+module.exports.getEmployeesByStatus = function (status) {
         return new Promise((resolve, reject) => {
-                let result = [];
-                employees.forEach(employee => {
-                        if (employee.status === status) {
-                                result.push(employee);
+                Employee.findAll({
+                        where: {
+                                status: {
+                                        [Op.eq]: status
+                                }
                         }
-                });
-                if (result.length === 0) {
-                        reject('No employees found!');
-                } else {
-                        resolve(result);
-                }
+                })
+                        .then((data) => { resolve(data); })
+                        .catch((err) => { reject(err); })
         });
 };
 
@@ -152,19 +162,17 @@ module.exports.getEmployeesByStatus = function(status) {
  * @returns {Promise} Promise object representing sucess of returning all
  * employees in department.
  */
-module.exports.getEmployeesByDepartment = function(department) {
+module.exports.getEmployeesByDepartment = function (department) {
         return new Promise((resolve, reject) => {
-                let result = [];
-                employees.forEach(employee => {
-                        if (employee.department == department) {
-                                result.push(employee);
+                Employee.findAll({
+                        where: {
+                                department: {
+                                        [Op.eq]: department
+                                }
                         }
-                });
-                if (result.length === 0) {
-                        reject('No employees found!');
-                } else {
-                        resolve(result);
-                }
+                })
+                        .then((data) => { resolve(data); })
+                        .catch((err) => { reject(err); })
         });
 };
 
@@ -175,19 +183,17 @@ module.exports.getEmployeesByDepartment = function(department) {
  * @returns {Promise} Promise object representing sucess of returning all
  * employees managed by manager.
  */
-module.exports.getEmployeesByManager = function(manager) {
+module.exports.getEmployeesByManager = function (manager) {
         return new Promise((resolve, reject) => {
-                let result = [];
-                employees.forEach(employee => {
-                        if (employee.employeeManagerNum == manager) {
-                                result.push(employee);
+                Employee.findAll({
+                        where: {
+                                employeeManagerNum: {
+                                        [Op.eq]: manager
+                                }
                         }
-                });
-                if (result.length === 0) {
-                        reject('No employees found!');
-                } else {
-                        resolve(result);
-                }
+                })
+                        .then((data) => { resolve(data); })
+                        .catch((err) => { reject(err); });
         });
 };
 
@@ -198,21 +204,17 @@ module.exports.getEmployeesByManager = function(manager) {
  * @returns {Promise} Promise object representing sucess of an employee
  * with employee number num.
  */
-module.exports.getEmployeeByNum = function(num) {
+module.exports.getEmployeeByNum = function (num) {
         return new Promise((resolve, reject) => {
-                let chosenEmployee = null;
-
-                employees.forEach(employee => {
-                        if (employee.employeeNum == num) {
-                                chosenEmployee = employee;
+                Employee.findAll({
+                        where: {
+                                employeeNum: { [Op.eq]: num }
                         }
-                });
-
-                if (chosenEmployee !== null) {
-                        resolve(chosenEmployee);
-                } else {
-                        reject('No employee found!');
-                }
+                })
+                        .then((data) => {
+                                resolve(data[0]);
+                        })
+                        .catch((err) => { reject(err); })
         });
 };
 
@@ -223,15 +225,119 @@ module.exports.getEmployeeByNum = function(num) {
  * @returns {Promise} Promise object representing sucess of updating
  * an employee.
  */
-module.exports.updateEmployee = function(employeeData) {
+module.exports.updateEmployee = function (employeeData) {
         return new Promise((resolve, reject) => {
-                for (let i = 0; i < employees.length; i++) {
-                        if (employees[i].employeeNum ==
-                            employeeData.employeeNum) {
-                                employees[i] = employeeData;
-                                resolve();
+                // we need to make sure it is a boolean value (radio button)
+                employeeData.isManager = (employeeData.isManager) ? true : false;
+
+                // we can not have any empty strings
+                for (let property in employeeData) {
+                        if (property == '') {
+                                property = null;
                         }
                 }
-                reject();
+
+                Employee.update(employeeData, {
+                        where: {
+                                employeeNum: {
+                                        [Op.eq]: employeeData.employeeNum
+                                }
+                        }
+                })
+                        .then(() => { resolve(); })
+                        .catch((err) => { reject(err); })
+        });
+};
+
+/**
+ * Add a new department.
+ * 
+ * @param {*} departmentData an object containing department information.
+ * @returns {Promise} Promise object representing sucess of adding a new
+ * department.
+ */
+module.exports.addDepartment = function (departmentData) {
+        return new Promise((resolve, reject) => {
+                // we can not have any empty strings
+                for (let property in departmentData) {
+                        if (property == '') {
+                                property = null;
+                        }
+                }
+
+                Department.create(departmentData)
+                        .then(() => { resolve(); })
+                        .catch((err) => { reject(err); })
+        });
+};
+
+/**
+ * Update a department.
+ * 
+ * @param {*} departmentData an object containing department information.
+ * @returns {Promise} Promise object representing sucess of updating a
+ * department.
+ */
+module.exports.updateDepartment = function (departmentData) {
+        return new Promise((resolve, reject) => {
+                // we can not have any empty strings
+                for (let property in departmentData) {
+                        if (property == '') {
+                                property = null;
+                        }
+                }
+
+                Department.update(departmentData, {
+                        where: {
+                                departmentId: {
+                                        [Op.eq]: departmentData.departmentId
+                                }
+                        }
+                })
+                        .then(() => { resolve(); })
+                        .catch((err) => { reject(); })
+        });
+};
+
+/**
+ * Get a department using department id.
+ * 
+ * @param {*} id a department id.
+ * @returns {Promise} Promise object representing sucess of find a
+ * department with provided id.
+ */
+module.exports.getDepartmentById = function (id) {
+        return new Promise((resolve, reject) => {
+                Department.findOne({
+                        where: {
+                                departmentId: {
+                                        [Op.eq]: id
+                                }
+                        }
+                }).then((data) => {
+                        resolve(data);
+                })
+                        .catch((err) => { reject(err); });
+        });
+};
+
+/**
+ * Remove an employee from the database.
+ * 
+ * @param {Number} empNum an employee number.
+ * @returns {Promise} Promise object representing sucess removing
+ * an employee.
+ */
+module.exports.deleteEmployeeByNum = function (empNum) {
+        return new Promise((resolve, reject) => {
+                Employee.destroy({
+                        where: {
+                                employeeNum: {
+                                        [Op.eq]: empNum
+                                }
+                        }
+                })
+                        .then(() => { resolve(); })
+                        .catch((err) => { reject(err); });
         });
 };

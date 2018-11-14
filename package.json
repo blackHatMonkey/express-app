@@ -11,10 +11,15 @@
     "license": "MIT",
     "dependencies": {
         "@types/express-handlebars": "0.0.30",
+        "@types/pg": "^7.4.11",
+        "@types/sequelize": "^4.27.30",
         "body-parser": "^1.18.3",
         "express": "^4.16.3",
         "express-handlebars": "^3.0.0",
-        "multer": "^1.4.0"
+        "multer": "^1.4.0",
+        "pg": "^7.6.1",
+        "pg-hstore": "^2.3.2",
+        "sequelize": "^4.41.1"
     },
     "jshintConfig": {
         "esversion": 6,
