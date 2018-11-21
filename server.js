@@ -16,6 +16,7 @@
 
 const express = require('express');
 const data_module = require('./data-server.js');
+const dataServiceAuth = require('./data-service-auth.js');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
