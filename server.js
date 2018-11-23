@@ -269,15 +269,16 @@ app.post('/departments/add', (req, res) => {
       });
 });
 
-app.post(
-    '/department/update',
-    (req, res) => {data_module.updateDepartment(req.body)
-                       .then(() => {
-                         res.redirect('/departments');
-                       })
-                       .catch((err) => {
-                         console.log(err);
-                       })});
+app.post('/departments/update', (req, res) => {
+  console.log('here:' + req.body);
+  data_module.updateDepartment(req.body)
+      .then(() => {
+        res.redirect('/departments');
+      })
+      .catch((err) => {
+        console.log(err);
+      })
+});
 
 app.use((req, res) => {
   res.status(404).send('Page Not Found');
