@@ -13,7 +13,8 @@ let sequelize = new Sequelize('d675hkmua4jd8p',
                 operatorsAliases: false,
                 dialectOptions: {
                         ssl: true
-                }
+                },
+                logging: false
         });
 
 let Employee = sequelize.define('Employee', {
